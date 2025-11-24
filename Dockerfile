@@ -20,15 +20,15 @@ RUN apk update && \
     rm -rf /var/cache/apk/*
 # 设置工作目录（可选，根据需要调整）
 WORKDIR /app    
-# 复制你的脚本（假设你项目里有 0.js）
-COPY 0.js /app/0.js
-RUN chmod +x /app/0.js
+# 复制一个启动脚本
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 # 创建 cron 必需目录和日志文件
 RUN mkdir -p /var/spool/cron/crontabs /var/log && \
     touch /var/log/cron.log && \
     chmod 666 /var/log/cron.log
 # 写入 crontab（每2分钟执行一次）
-RUN echo "*/2 * * * * /usr/bin/node /app/0.js >> /var/log/cron.log 2>&1" > /var/spool/cron/crontabs/root
+RUN echo "# */2 * * * * date >> /var/log/cron.log 2>&1" > /var/spool/cron/crontabs/root
 # 示例：复制你的代码到容器中（在 GitHub Actions 中你可以构建时复制）
 # 这一步最关键！！！权限必须是 600 + root:root
 RUN chmod 600 /var/spool/cron/crontabs/root && \
@@ -36,4 +36,5 @@ RUN chmod 600 /var/spool/cron/crontabs/root && \
 
 # 默认命令：启动 crond 并保持容器运行（你可以根据需要修改为运行特定脚本）
 # 注意：crond 需要在前台运行以保持容器活跃，通常结合 tail -f /dev/null 或其他方式
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["crond", "-f", "-l", "4"]
